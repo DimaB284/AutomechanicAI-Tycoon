@@ -6,6 +6,7 @@ public class BuildButton : MonoBehaviour
 
     public void OnClick()
     {
+        Debug.Log("Button clicked!");
         BuildManager.Instance.SelectBuilding(buildingPrefab);
     }
 }
