@@ -6,6 +6,9 @@ public class GameManager : MonoBehaviour
 
     public bool IsGamePaused { get; private set; }
 
+    private float autosaveInterval = 30f;
+    private float autosaveTimer = 0f;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -19,8 +22,36 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        // Ініціалізація інших систем
+        // Р—Р°РІР°РЅС‚Р°Р¶СѓС”РјРѕ РїСЂРѕРіСЂРµСЃ
+        SaveManager.Instance.LoadGame();
+
+        // Р—Р°РїСѓСЃРєР°С”РјРѕ С–РіСЂРѕРІРёР№ С‡Р°СЃ
         TimeManager.Instance.StartGameTime();
+
+        // РЇРєС‰Рѕ РіСЂР° Р·Р°РїСѓСЃРєР°С”С‚СЊСЃСЏ РІРїРµСЂС€Рµ, РґРѕРґР°С”РјРѕ СЃС‚Р°СЂС‚РѕРІС– СЂРµСЃСѓСЂСЃРё
+        if (InventoryManager.Instance.GetResourceAmount("Money") == 0 &&
+            InventoryManager.Instance.GetResourceAmount("Metal") == 0 &&
+            InventoryManager.Instance.GetResourceAmount("Plastic") == 0)
+        {
+            InventoryManager.Instance.AddResource("Money", 100);
+            InventoryManager.Instance.AddResource("Metal", 10);
+            InventoryManager.Instance.AddResource("Plastic", 8);
+        }
+
+        // РћРЅРѕРІР»СЋС”РјРѕ HUD
+        UIManager.Instance.UpdateMoney(InventoryManager.Instance.GetResourceAmount("Money"));
+        UIManager.Instance.UpdateMetal(InventoryManager.Instance.GetResourceAmount("Metal"));
+        UIManager.Instance.UpdatePlastic(InventoryManager.Instance.GetResourceAmount("Plastic"));
+    }
+
+    private void Update()
+    {
+        autosaveTimer += Time.deltaTime;
+        if (autosaveTimer >= autosaveInterval)
+        {
+            SaveManager.Instance.SaveGame();
+            autosaveTimer = 0f;
+        }
     }
 
     public void PauseGame()
@@ -35,5 +66,5 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
     }
 
-    // Методи для збереження/завантаження, переходу між сценами тощо
+    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 }
