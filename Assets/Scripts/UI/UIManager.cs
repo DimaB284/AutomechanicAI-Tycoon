@@ -5,12 +5,18 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    [Header("HUD")]
+    [Header("HUD")] 
+    public Image moneyIcon;
     public Text moneyText;
+    public Image metalIcon;
     public Text metalText;
+    public Image plasticIcon;
     public Text plasticText;
+    public Image electronicsIcon;
     public Text electronicsText;
+    public Image tiresIcon;
     public Text tiresText;
+    public Image paintIcon;
     public Text paintText;
 
     [Header("Меню паузи")]
@@ -30,37 +36,32 @@ public class UIManager : MonoBehaviour
     public void UpdateMoney(int amount)
     {
         if (moneyText != null)
-            moneyText.text = $"Money: {amount}";
+            moneyText.text = amount.ToString();
     }
-
     public void UpdateMetal(int amount)
     {
         if (metalText != null)
-            metalText.text = $"Metal: {amount}";
+            metalText.text = amount.ToString();
     }
-
     public void UpdatePlastic(int amount)
     {
         if (plasticText != null)
-            plasticText.text = $"Plastic: {amount}";
+            plasticText.text = amount.ToString();
     }
-
     public void UpdateElectronics(int amount)
     {
         if (electronicsText != null)
-            electronicsText.text = $"Electronics: {amount}";
+            electronicsText.text = amount.ToString();
     }
-
     public void UpdateTires(int amount)
     {
         if (tiresText != null)
-            tiresText.text = $"Tires: {amount}";
+            tiresText.text = amount.ToString();
     }
-
     public void UpdatePaint(int amount)
     {
         if (paintText != null)
-            paintText.text = $"Paint: {amount}";
+            paintText.text = amount.ToString();
     }
 
     public void ShowPauseMenu(bool show)

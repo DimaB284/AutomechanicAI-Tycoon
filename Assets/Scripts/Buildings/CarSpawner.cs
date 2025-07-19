@@ -3,7 +3,9 @@ using System.Linq;
 
 public class CarSpawner : MonoBehaviour
 {
-    public GameObject carPrefab;
+    public GameObject[] carPrefabs; // Масив різних префабів машин
+    [Tooltip("Ймовірності для кожного типу машини (сума = 1.0)")]
+    public float[] carChances; // Ймовірності для кожного типу машини
     public Transform[] spawnPoints;
     public float spawnInterval = 5f;
     public float carSpawnRadius = 2f;
@@ -21,9 +23,24 @@ public class CarSpawner : MonoBehaviour
         }
     }
 
+    GameObject GetRandomCarPrefab()
+    {
+        if (carPrefabs == null || carPrefabs.Length == 0 || carChances == null || carChances.Length != carPrefabs.Length)
+            return null;
+        float rand = Random.value;
+        float cumulative = 0f;
+        for (int i = 0; i < carPrefabs.Length; i++)
+        {
+            cumulative += carChances[i];
+            if (rand < cumulative)
+                return carPrefabs[i];
+        }
+        return carPrefabs[carPrefabs.Length - 1]; // fallback
+    }
+
     void SpawnCar()
     {
-        if (spawnPoints.Length == 0 || carPrefab == null)
+        if (spawnPoints.Length == 0 || carPrefabs == null || carPrefabs.Length == 0)
             return;
 
         // Перемішуємо точки спавну для випадковості
@@ -31,18 +48,17 @@ public class CarSpawner : MonoBehaviour
 
         foreach (var spawnPoint in shuffledPoints)
         {
-            // Перевіряємо, чи точка вільна (немає інших машин або механіків поруч)
             Collider[] colliders = Physics.OverlapSphere(spawnPoint.position, carSpawnRadius);
             bool hasCar = colliders.Any(c => c.GetComponent<Car>() != null);
             bool hasMechanic = colliders.Any(c => c.GetComponent<MechanicAI>() != null);
-
-            // Додатково перевіряємо, щоб механік не був надто близько (уникнути перетину)
             bool mechanicTooClose = Physics.OverlapSphere(spawnPoint.position, mechanicSafeRadius)
                 .Any(c => c.GetComponent<MechanicAI>() != null);
 
             if (!hasCar && !hasMechanic && !mechanicTooClose)
             {
-                GameObject carObj = Instantiate(carPrefab, spawnPoint.position, Quaternion.identity);
+                GameObject prefab = GetRandomCarPrefab();
+                if (prefab == null) return;
+                GameObject carObj = Instantiate(prefab, spawnPoint.position, Quaternion.identity);
                 // Притискаємо машину до землі через Raycast
                 RaycastHit hit;
                 if (Physics.Raycast(carObj.transform.position + Vector3.up * 2f, Vector3.down, out hit, 10f))
