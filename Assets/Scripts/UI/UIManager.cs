@@ -9,6 +9,9 @@ public class UIManager : MonoBehaviour
     public Text moneyText;
     public Text metalText;
     public Text plasticText;
+    public Text electronicsText;
+    public Text tiresText;
+    public Text paintText;
 
     [Header("Меню паузи")]
     public GameObject pauseMenuPanel;
@@ -40,6 +43,24 @@ public class UIManager : MonoBehaviour
     {
         if (plasticText != null)
             plasticText.text = $"Plastic: {amount}";
+    }
+
+    public void UpdateElectronics(int amount)
+    {
+        if (electronicsText != null)
+            electronicsText.text = $"Electronics: {amount}";
+    }
+
+    public void UpdateTires(int amount)
+    {
+        if (tiresText != null)
+            tiresText.text = $"Tires: {amount}";
+    }
+
+    public void UpdatePaint(int amount)
+    {
+        if (paintText != null)
+            paintText.text = $"Paint: {amount}";
     }
 
     public void ShowPauseMenu(bool show)

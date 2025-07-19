@@ -5,16 +5,22 @@ public class MechanicAI : MonoBehaviour
 {
     public float moveSpeed = 3f;
     public float repairTime = 3f;
+    public float approachDistance = 2f; // Відстань, на якій робот починає ремонт
 
     private enum State { Idle, MoveToCar, Repair }
     private State currentState = State.Idle;
 
     private Car targetCar;
     private Vector3 startPosition;
+    private float stuckTimer = 0f;
+    private Vector3 lastPosition;
+    private Animator animator;
 
     private void Start()
     {
         startPosition = transform.position;
+        lastPosition = transform.position;
+        animator = GetComponent<Animator>();
         StartCoroutine(StateMachine());
     }
 
@@ -59,6 +65,8 @@ public class MechanicAI : MonoBehaviour
         {
             targetCar = nearest;
             currentState = State.MoveToCar;
+            stuckTimer = 0f;
+            Debug.Log($"Робот знайшов машину на відстані {minDist}");
         }
     }
 
@@ -66,24 +74,81 @@ public class MechanicAI : MonoBehaviour
     {
         if (targetCar == null || targetCar.isRepaired)
         {
+            if (animator != null)
+                animator.SetBool("IsWalking", false);
             currentState = State.Idle;
             return;
         }
-        Vector3 dir = (targetCar.transform.position - transform.position).normalized;
-        transform.position += dir * moveSpeed * Time.deltaTime;
-        if (Vector3.Distance(transform.position, targetCar.transform.position) < 1.2f)
+
+        // Рухаємося до машини тільки по XZ
+        Vector3 targetPos = targetCar.transform.position;
+        targetPos.y = transform.position.y; // залишаємо поточний Y
+
+        float distanceToCar = Vector3.Distance(transform.position, targetPos);
+
+        // Перевіряємо чи робот не застряг
+        if (Vector3.Distance(transform.position, lastPosition) < 0.01f)
         {
-            currentState = State.Repair;
+            stuckTimer += Time.deltaTime;
+            if (stuckTimer > 2f)
+            {
+                if (animator != null)
+                    animator.SetBool("IsWalking", false);
+                Debug.Log("Робот застряг, шукаємо іншу машину");
+                targetCar = null;
+                currentState = State.Idle;
+                return;
+            }
         }
+        else
+        {
+            stuckTimer = 0f;
+        }
+
+        // Якщо дійшли до машини
+        if (distanceToCar <= approachDistance)
+        {
+            if (animator != null)
+                animator.SetBool("IsWalking", false);
+            Debug.Log($"Робот дійшов до машини, відстань: {distanceToCar}");
+            currentState = State.Repair;
+            return;
+        }
+
+        // Рухаємося до машини
+        Vector3 dir = (targetPos - transform.position).normalized;
+        transform.position += dir * moveSpeed * Time.deltaTime;
+
+        // Розвертаємо робота у напрямку руху (тільки по Y)
+        if (dir != Vector3.zero)
+        {
+            Quaternion lookRotation = Quaternion.LookRotation(dir, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 8f);
+        }
+
+        if (animator != null)
+            animator.SetBool("IsWalking", true);
+
+        lastPosition = transform.position;
     }
 
     IEnumerator RepairCar()
     {
         if (targetCar == null)
         {
+            if (animator != null)
+                animator.SetBool("IsWalking", false);
             currentState = State.Idle;
             yield break;
         }
+
+        if (animator != null)
+        {
+            animator.SetBool("IsWalking", false);
+            animator.SetTrigger("Repair");
+        }
+
+        Debug.Log("Робот починає ремонт");
 
         // Витрати ресурсів залежно від типу поломки
         string neededResource = "Metal";
@@ -97,25 +162,30 @@ public class MechanicAI : MonoBehaviour
                 reward = 20;
                 break;
             case Car.DamageType.Wheels:
-                neededResource = "Plastic";
+                neededResource = "Tires";
                 resourceCost = 2;
-                reward = 12;
+                reward = 14;
                 break;
             case Car.DamageType.Body:
-                neededResource = "Metal";
+                neededResource = "Plastic";
                 resourceCost = 2;
                 reward = 15;
                 break;
             case Car.DamageType.Electronics:
-                neededResource = "Plastic";
-                resourceCost = 3;
+                neededResource = "Electronics";
+                resourceCost = 2;
                 reward = 18;
+                break;
+            case Car.DamageType.Paint:
+                neededResource = "Paint";
+                resourceCost = 1;
+                reward = 8;
                 break;
         }
 
-        if (!InventoryManager.Instance.HasResource(neededResource, resourceCost))
+        if (InventoryManager.Instance == null || !InventoryManager.Instance.HasResource(neededResource, resourceCost))
         {
-            // Недостатньо ресурсів — шукаємо іншу машину
+            Debug.Log($"Недостатньо ресурсів: {neededResource}");
             targetCar = null;
             currentState = State.Idle;
             yield break;
@@ -123,16 +193,30 @@ public class MechanicAI : MonoBehaviour
 
         InventoryManager.Instance.RemoveResource(neededResource, resourceCost);
         targetCar.StartRepair();
+        
+        Debug.Log($"Ремонт триває {repairTime} секунд");
         yield return new WaitForSeconds(repairTime);
-        targetCar.CompleteRepair();
+        
+        if (targetCar != null)
+        {
+            targetCar.CompleteRepair();
+            Debug.Log("Ремонт завершено");
+        }
 
         // Додаємо гроші
-        InventoryManager.Instance.AddResource("Money", reward);
+        if (InventoryManager.Instance != null)
+            InventoryManager.Instance.AddResource("Money", reward);
 
         // Оновлюємо UI
-        UIManager.Instance.UpdateMoney(InventoryManager.Instance.GetResourceAmount("Money"));
-        UIManager.Instance.UpdateMetal(InventoryManager.Instance.GetResourceAmount("Metal"));
-        UIManager.Instance.UpdatePlastic(InventoryManager.Instance.GetResourceAmount("Plastic"));
+        if (UIManager.Instance != null && InventoryManager.Instance != null)
+        {
+            UIManager.Instance.UpdateMoney(InventoryManager.Instance.GetResourceAmount("Money"));
+            UIManager.Instance.UpdateMetal(InventoryManager.Instance.GetResourceAmount("Metal"));
+            UIManager.Instance.UpdatePlastic(InventoryManager.Instance.GetResourceAmount("Plastic"));
+            UIManager.Instance.UpdateElectronics(InventoryManager.Instance.GetResourceAmount("Electronics"));
+            UIManager.Instance.UpdateTires(InventoryManager.Instance.GetResourceAmount("Tires"));
+            UIManager.Instance.UpdatePaint(InventoryManager.Instance.GetResourceAmount("Paint"));
+        }
 
         targetCar = null;
         currentState = State.Idle;

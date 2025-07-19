@@ -31,17 +31,26 @@ public class GameManager : MonoBehaviour
         // Якщо гра запускається вперше, додаємо стартові ресурси
         if (InventoryManager.Instance.GetResourceAmount("Money") == 0 &&
             InventoryManager.Instance.GetResourceAmount("Metal") == 0 &&
-            InventoryManager.Instance.GetResourceAmount("Plastic") == 0)
+            InventoryManager.Instance.GetResourceAmount("Plastic") == 0 &&
+            InventoryManager.Instance.GetResourceAmount("Electronics") == 0 &&
+            InventoryManager.Instance.GetResourceAmount("Tires") == 0 &&
+            InventoryManager.Instance.GetResourceAmount("Paint") == 0)
         {
-            InventoryManager.Instance.AddResource("Money", 100);
-            InventoryManager.Instance.AddResource("Metal", 10);
-            InventoryManager.Instance.AddResource("Plastic", 8);
+            InventoryManager.Instance.AddResource("Money", 200);
+            InventoryManager.Instance.AddResource("Metal", 20);
+            InventoryManager.Instance.AddResource("Plastic", 15);
+            InventoryManager.Instance.AddResource("Electronics", 20);
+            InventoryManager.Instance.AddResource("Tires", 30);
+            InventoryManager.Instance.AddResource("Paint", 100);
         }
 
         // Оновлюємо HUD
         UIManager.Instance.UpdateMoney(InventoryManager.Instance.GetResourceAmount("Money"));
         UIManager.Instance.UpdateMetal(InventoryManager.Instance.GetResourceAmount("Metal"));
         UIManager.Instance.UpdatePlastic(InventoryManager.Instance.GetResourceAmount("Plastic"));
+        UIManager.Instance.UpdateElectronics(InventoryManager.Instance.GetResourceAmount("Electronics"));
+        UIManager.Instance.UpdateTires(InventoryManager.Instance.GetResourceAmount("Tires"));
+        UIManager.Instance.UpdatePaint(InventoryManager.Instance.GetResourceAmount("Paint"));
     }
 
     private void Update()

@@ -2,137 +2,44 @@ using UnityEngine;
 
 public class BuildManager : MonoBehaviour
 {
-    public static BuildManager Instance;
+    public static BuildManager Instance { get; private set; }
 
-    public GameObject buildingToPlace;
-    private GameObject previewInstance;
-    private Material previewMaterial;
-    public ErrorUI errorUI;
-    private Color previewColorValid = new Color(1, 1, 1, 0.5f);
-    private Color previewColorInvalid = new Color(1, 0.3f, 0.3f, 0.5f);
+    [Header("Префаби та позиції")]
+    public GameObject boxPrefab;
+    public Transform[] boxSpawnPoints;
+
+    private int currentBoxIndex = 0;
 
     private void Awake()
     {
-        Instance = this;
-    }
-
-    public void SelectBuilding(GameObject buildingPrefab)
-    {
-        buildingToPlace = buildingPrefab;
-        CreatePreview();
-    }
-
-    private void Update()
-    {
-        if (buildingToPlace == null)
+        if (Instance != null && Instance != this)
         {
-            DestroyPreview();
+            Destroy(gameObject);
             return;
         }
-
-        UpdatePreviewPosition();
-        bool canBuild = CanBuildHere(out Vector3 buildPosition, true);
-        SetPreviewColor(canBuild);
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            if (canBuild)
-            {
-                Building buildingData = buildingToPlace.GetComponent<Building>();
-                if (GameManager.Instance.SpendMoney(buildingData.cost))
-                {
-                    Vector3 spawnPos = buildPosition + Vector3.up * 3.0f;
-                    GameObject newBuilding = Instantiate(buildingToPlace, spawnPos, Quaternion.identity);
-                    GameManager.Instance.builtBuildings.Add(buildingData.buildingName);
-                    Debug.Log("Building placed at: " + spawnPos);
-                }
-                else
-                {
-                    if (errorUI != null)
-                        errorUI.ShowError("Недостатньо грошей!");
-                    else
-                        Debug.Log("Not enough money!");
-                }
-                buildingToPlace = null;
-                DestroyPreview();
-            }
-            else
-            {
-                if (errorUI != null)
-                    errorUI.ShowError("Не можна будувати тут!");
-            }
-        }
-
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            buildingToPlace = null;
-            DestroyPreview();
-        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
-    private void CreatePreview()
+    public bool BuildBox(int metalCost, int plasticCost)
     {
-        DestroyPreview();
-        if (buildingToPlace == null) return;
-        previewInstance = Instantiate(buildingToPlace);
-        foreach (var renderer in previewInstance.GetComponentsInChildren<Renderer>())
-        {
-            previewMaterial = new Material(renderer.sharedMaterial);
-            previewMaterial.color = new Color(1, 1, 1, 0.5f);
-            renderer.material = previewMaterial;
-        }
-        // Вимкнути колайдери для preview
-        foreach (var col in previewInstance.GetComponentsInChildren<Collider>())
-            col.enabled = false;
+        if (currentBoxIndex >= boxSpawnPoints.Length)
+            return false;
+        if (!InventoryManager.Instance.HasResource("Metal", metalCost) ||
+            !InventoryManager.Instance.HasResource("Plastic", plasticCost))
+            return false;
+
+        InventoryManager.Instance.RemoveResource("Metal", metalCost);
+        InventoryManager.Instance.RemoveResource("Plastic", plasticCost);
+
+        Instantiate(boxPrefab, boxSpawnPoints[currentBoxIndex].position, Quaternion.identity);
+        currentBoxIndex++;
+        return true;
     }
 
-    private void UpdatePreviewPosition()
+    // Простий апгрейд (можна розширити)
+    public void UpgradeBox(GameObject box)
     {
-        if (previewInstance == null) return;
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit))
-        {
-            previewInstance.transform.position = hit.point;
-        }
+        // Тут можна додати логіку апгрейду боксу (наприклад, збільшити швидкість ремонту)
     }
-
-    private void DestroyPreview()
-    {
-        if (previewInstance != null)
-            Destroy(previewInstance);
-    }
-
-    private void SetPreviewColor(bool canBuild)
-    {
-        if (previewInstance == null) return;
-        foreach (var renderer in previewInstance.GetComponentsInChildren<Renderer>())
-        {
-            if (canBuild)
-                renderer.material.color = previewColorValid;
-            else
-                renderer.material.color = previewColorInvalid;
-        }
-    }
-
-    private bool CanBuildHere(out Vector3 buildPosition, bool checkOccupied = false)
-    {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit))
-        {
-            buildPosition = hit.point;
-            if (checkOccupied)
-            {
-                float checkRadius = 1.0f;
-                Collider[] colliders = Physics.OverlapSphere(buildPosition, checkRadius);
-                foreach (var col in colliders)
-                {
-                    if (col.gameObject.GetComponent<Building>() != null)
-                        return false;
-                }
-            }
-            return true;
-        }
-        buildPosition = Vector3.zero;
-        return false;
-    }
-}
+} 
