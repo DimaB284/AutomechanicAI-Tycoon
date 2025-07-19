@@ -75,7 +75,7 @@ public class MechanicAI : MonoBehaviour
         if (targetCar == null || targetCar.isRepaired)
         {
             if (animator != null)
-                animator.SetBool("IsWalking", false);
+                animator.SetBool("isWalking", false);
             currentState = State.Idle;
             return;
         }
@@ -93,7 +93,7 @@ public class MechanicAI : MonoBehaviour
             if (stuckTimer > 2f)
             {
                 if (animator != null)
-                    animator.SetBool("IsWalking", false);
+                    animator.SetBool("isWalking", false);
                 Debug.Log("Робот застряг, шукаємо іншу машину");
                 targetCar = null;
                 currentState = State.Idle;
@@ -109,7 +109,7 @@ public class MechanicAI : MonoBehaviour
         if (distanceToCar <= approachDistance)
         {
             if (animator != null)
-                animator.SetBool("IsWalking", false);
+                animator.SetBool("isWalking", false);
             Debug.Log($"Робот дійшов до машини, відстань: {distanceToCar}");
             currentState = State.Repair;
             return;
@@ -127,7 +127,7 @@ public class MechanicAI : MonoBehaviour
         }
 
         if (animator != null)
-            animator.SetBool("IsWalking", true);
+            animator.SetBool("isWalking", true);
 
         lastPosition = transform.position;
     }
@@ -137,14 +137,23 @@ public class MechanicAI : MonoBehaviour
         if (targetCar == null)
         {
             if (animator != null)
-                animator.SetBool("IsWalking", false);
+                animator.SetBool("isWalking", false);
             currentState = State.Idle;
             yield break;
         }
 
+        // Розвертаємо робота до машини перед ремонтом
+        Vector3 dirToCar = (targetCar.transform.position - transform.position);
+        dirToCar.y = 0;
+        if (dirToCar != Vector3.zero)
+        {
+            Quaternion lookRotation = Quaternion.LookRotation(dirToCar, Vector3.up);
+            transform.rotation = lookRotation;
+        }
+
         if (animator != null)
         {
-            animator.SetBool("IsWalking", false);
+            animator.SetBool("isWalking", false);
             animator.SetTrigger("Repair");
         }
 

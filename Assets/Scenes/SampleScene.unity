@@ -752,7 +752,7 @@ Transform:
   m_GameObject: {fileID: 769983708}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.17, y: -0.392, z: 0}
+  m_LocalPosition: {x: -0.24, y: -0.392, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -783,7 +783,7 @@ Transform:
   m_GameObject: {fileID: 773805855}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.38, y: -0.392, z: 0}
+  m_LocalPosition: {x: -4.22, y: -0.392, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1686,6 +1686,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1952166633}
   - component: {fileID: 1952166634}
+  - component: {fileID: 1952166635}
   m_Layer: 0
   m_Name: CarSpawner
   m_TagString: Untagged
@@ -1730,6 +1731,28 @@ MonoBehaviour:
   - {fileID: 769983709}
   - {fileID: 773805856}
   spawnInterval: 5
+  timer: 0
+--- !u!114 &1952166635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1952166631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b2f51f9fa045af41b52870ec5db2f7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  carPrefab: {fileID: 3253021676899627099, guid: 2e602312a390907468704abb865a6443,
+    type: 3}
+  spawnPoints:
+  - {fileID: 502495412}
+  - {fileID: 769983709}
+  - {fileID: 773805856}
+  spawnInterval: 7
+  carSpawnRadius: 2
+  mechanicSafeRadius: 2.5
 --- !u!4 &33466477528198440
 Transform:
   m_ObjectHideFlags: 0
@@ -3161,10 +3184,10 @@ Animator:
   m_GameObject: {fileID: 4438665985687960475}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 73ffbc06802a247cfb1b26f4ee67eba8, type: 3}
-  m_Controller: {fileID: 9100000, guid: 40db3173a05ae3242b1c182a09b0a183, type: 2}
+  m_Controller: {fileID: 9100000, guid: e79cc10b3188ec840a9b5d4e420c463f, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
-  m_ApplyRootMotion: 1
+  m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_WarningMessage: 
@@ -3186,7 +3209,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 3
   repairTime: 3
-  approachDistance: 3
+  approachDistance: 1
 --- !u!1 &7085020860229098663
 GameObject:
   m_ObjectHideFlags: 0

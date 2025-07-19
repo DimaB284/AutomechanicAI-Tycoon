@@ -6,6 +6,8 @@ public class CarSpawner : MonoBehaviour
     public GameObject carPrefab;
     public Transform[] spawnPoints;
     public float spawnInterval = 5f;
+    public float carSpawnRadius = 2f;
+    public float mechanicSafeRadius = 2.5f;
 
     private float timer = 0f;
 
@@ -29,13 +31,23 @@ public class CarSpawner : MonoBehaviour
 
         foreach (var spawnPoint in shuffledPoints)
         {
-            // Перевіряємо, чи точка вільна (немає інших машин поруч)
-            Collider[] colliders = Physics.OverlapSphere(spawnPoint.position, 2f);
+            // Перевіряємо, чи точка вільна (немає інших машин або механіків поруч)
+            Collider[] colliders = Physics.OverlapSphere(spawnPoint.position, carSpawnRadius);
             bool hasCar = colliders.Any(c => c.GetComponent<Car>() != null);
+            bool hasMechanic = colliders.Any(c => c.GetComponent<MechanicAI>() != null);
 
-            if (!hasCar)
+            // Додатково перевіряємо, щоб механік не був надто близько (уникнути перетину)
+            bool mechanicTooClose = Physics.OverlapSphere(spawnPoint.position, mechanicSafeRadius)
+                .Any(c => c.GetComponent<MechanicAI>() != null);
+
+            if (!hasCar && !hasMechanic && !mechanicTooClose)
             {
                 GameObject carObj = Instantiate(carPrefab, spawnPoint.position, Quaternion.identity);
+                // Притискаємо машину до землі через Raycast
+                RaycastHit hit;
+                if (Physics.Raycast(carObj.transform.position + Vector3.up * 2f, Vector3.down, out hit, 10f))
+                    carObj.transform.position = hit.point;
+
                 Car car = carObj.GetComponent<Car>();
                 if (car != null)
                 {
