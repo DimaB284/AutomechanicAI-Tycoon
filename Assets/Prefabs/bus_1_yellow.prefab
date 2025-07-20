@@ -888,6 +888,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba0fa64b5721a9a4ca0df1cb7cdee374, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  carType: 1
+  carType: 4
   damageType: 0
   isRepaired: 0

@@ -15,12 +15,14 @@ public class MechanicAI : MonoBehaviour
     private float stuckTimer = 0f;
     private Vector3 lastPosition;
     private Animator animator;
+    private Rigidbody rb;
 
     private void Start()
     {
         startPosition = transform.position;
         lastPosition = transform.position;
         animator = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody>();
         StartCoroutine(StateMachine());
     }
 
@@ -84,6 +86,7 @@ public class MechanicAI : MonoBehaviour
         Vector3 targetPos = targetCar.transform.position;
         targetPos.y = transform.position.y; // залишаємо поточний Y
 
+        float approachDist = GetApproachDistance(targetCar.carType);
         float distanceToCar = Vector3.Distance(transform.position, targetPos);
 
         // Перевіряємо чи робот не застряг
@@ -106,7 +109,7 @@ public class MechanicAI : MonoBehaviour
         }
 
         // Якщо дійшли до машини
-        if (distanceToCar <= approachDistance)
+        if (distanceToCar <= approachDist)
         {
             if (animator != null)
                 animator.SetBool("isWalking", false);
@@ -117,7 +120,7 @@ public class MechanicAI : MonoBehaviour
 
         // Рухаємося до машини
         Vector3 dir = (targetPos - transform.position).normalized;
-        transform.position += dir * moveSpeed * Time.deltaTime;
+        Vector3 nextPos = transform.position + dir * moveSpeed * Time.deltaTime;
 
         // Розвертаємо робота у напрямку руху (тільки по Y)
         if (dir != Vector3.zero)
@@ -129,6 +132,12 @@ public class MechanicAI : MonoBehaviour
         if (animator != null)
             animator.SetBool("isWalking", true);
 
+        // Рухаємо через Rigidbody, якщо є
+        if (rb != null && !rb.isKinematic)
+            rb.MovePosition(nextPos);
+        else
+            transform.position = nextPos;
+
         lastPosition = transform.position;
     }
 
@@ -137,7 +146,7 @@ public class MechanicAI : MonoBehaviour
         if (targetCar == null)
         {
             if (animator != null)
-                animator.SetBool("isWalking", false);
+                animator.SetBool("IsWalking", false);
             currentState = State.Idle;
             yield break;
         }
@@ -153,44 +162,50 @@ public class MechanicAI : MonoBehaviour
 
         if (animator != null)
         {
-            animator.SetBool("isWalking", false);
+            animator.SetBool("IsWalking", false);
             animator.SetTrigger("Repair");
         }
 
         Debug.Log("Робот починає ремонт");
 
-        // Витрати ресурсів залежно від типу поломки
+        // 1. Визначаємо базову вартість і нагороду
         string neededResource = "Metal";
-        int resourceCost = 2;
-        int reward = 10;
+        int baseResourceCost = 2;
+        int baseReward = 10;
         switch (targetCar.damageType)
         {
             case Car.DamageType.Engine:
                 neededResource = "Metal";
-                resourceCost = 3;
-                reward = 20;
+                baseResourceCost = 3;
+                baseReward = 20;
                 break;
             case Car.DamageType.Wheels:
-                neededResource = "Tires";
-                resourceCost = 2;
-                reward = 14;
+                neededResource = "Plastic";
+                baseResourceCost = 2;
+                baseReward = 12;
                 break;
             case Car.DamageType.Body:
-                neededResource = "Plastic";
-                resourceCost = 2;
-                reward = 15;
+                neededResource = "Metal";
+                baseResourceCost = 2;
+                baseReward = 15;
                 break;
             case Car.DamageType.Electronics:
                 neededResource = "Electronics";
-                resourceCost = 2;
-                reward = 18;
+                baseResourceCost = 2;
+                baseReward = 18;
                 break;
             case Car.DamageType.Paint:
                 neededResource = "Paint";
-                resourceCost = 1;
-                reward = 8;
+                baseResourceCost = 1;
+                baseReward = 8;
                 break;
         }
+
+        // 2. Застосовуємо множник типу машини
+        float multiplier = GetCarTypeMultiplier(targetCar.carType);
+        int resourceCost = Mathf.CeilToInt(baseResourceCost * multiplier);
+        int reward = Mathf.CeilToInt(baseReward * multiplier);
+        float repairTime = this.repairTime * multiplier;
 
         if (InventoryManager.Instance == null || !InventoryManager.Instance.HasResource(neededResource, resourceCost))
         {
@@ -229,5 +244,29 @@ public class MechanicAI : MonoBehaviour
 
         targetCar = null;
         currentState = State.Idle;
+    }
+
+    float GetCarTypeMultiplier(Car.CarType type)
+    {
+        switch (type)
+        {
+            case Car.CarType.Sedan: return 1.0f;
+            case Car.CarType.Truck: return 2.0f;
+            case Car.CarType.Minivan: return 1.5f;
+            case Car.CarType.Bus: return 3.0f;
+            default: return 1.0f;
+        }
+    }
+
+    float GetApproachDistance(Car.CarType type)
+    {
+        switch (type)
+        {
+            case Car.CarType.Sedan: return 1.0f;
+            case Car.CarType.Truck: return 3.0f;
+            case Car.CarType.Minivan: return 1.5f;
+            case Car.CarType.Bus: return 3.0f;
+            default: return 1.0f;
+        }
     }
 } 

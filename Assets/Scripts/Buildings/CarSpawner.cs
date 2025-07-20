@@ -8,19 +8,35 @@ public class CarSpawner : MonoBehaviour
     public float[] carChances; // Ймовірності для кожного типу машини
     public Transform[] spawnPoints;
     public float spawnInterval = 5f;
-    public float carSpawnRadius = 2f;
+    public float carSpawnRadius = 1.0f; // Зменшено для точнішої перевірки
     public float mechanicSafeRadius = 2.5f;
+    public GameObject problemIndicatorPrefab;
+
+    [HideInInspector]
+    public bool[] spawnOccupied;
 
     private float timer = 0f;
+    public static CarSpawner Instance { get; private set; }
 
-    private void Update()
+    private void Awake()
     {
-        timer += Time.deltaTime;
-        if (timer >= spawnInterval)
+        if (Instance != null && Instance != this)
         {
-            SpawnCar();
-            timer = 0f;
+            Destroy(gameObject);
+            return;
         }
+        Instance = this;
+    }
+
+    private void Start()
+    {
+        spawnOccupied = new bool[spawnPoints.Length];
+    }
+
+    public void FreeSpawnPoint(int index)
+    {
+        if (index >= 0 && index < spawnOccupied.Length)
+            spawnOccupied[index] = false;
     }
 
     GameObject GetRandomCarPrefab()
@@ -38,42 +54,65 @@ public class CarSpawner : MonoBehaviour
         return carPrefabs[carPrefabs.Length - 1]; // fallback
     }
 
-    void SpawnCar()
+    private void Update()
+    {
+        timer += Time.deltaTime;
+        if (timer >= spawnInterval)
+        {
+            TrySpawnCar();
+            timer = 0f;
+        }
+    }
+
+    void TrySpawnCar()
     {
         if (spawnPoints.Length == 0 || carPrefabs == null || carPrefabs.Length == 0)
             return;
 
-        // Перемішуємо точки спавну для випадковості
-        var shuffledPoints = spawnPoints.OrderBy(x => Random.value).ToArray();
+        // Збираємо всі вільні spawnPoints
+        var freeIndices = Enumerable.Range(0, spawnPoints.Length)
+            .Where(i => !spawnOccupied[i])
+            .ToList();
 
-        foreach (var spawnPoint in shuffledPoints)
+        if (freeIndices.Count == 0)
+            return;
+
+        int chosen = freeIndices[Random.Range(0, freeIndices.Count)];
+        var spawnPoint = spawnPoints[chosen];
+
+        GameObject prefab = GetRandomCarPrefab();
+        if (prefab == null) return;
+        GameObject carObj = Instantiate(prefab, spawnPoint.position, Quaternion.identity);
+
+        // Притискаємо машину до землі через Raycast
+        RaycastHit hit;
+        if (Physics.Raycast(carObj.transform.position + Vector3.up * 2f, Vector3.down, out hit, 10f))
+            carObj.transform.position = hit.point;
+
+        Car car = carObj.GetComponent<Car>();
+        if (car != null)
         {
-            Collider[] colliders = Physics.OverlapSphere(spawnPoint.position, carSpawnRadius);
-            bool hasCar = colliders.Any(c => c.GetComponent<Car>() != null);
-            bool hasMechanic = colliders.Any(c => c.GetComponent<MechanicAI>() != null);
-            bool mechanicTooClose = Physics.OverlapSphere(spawnPoint.position, mechanicSafeRadius)
-                .Any(c => c.GetComponent<MechanicAI>() != null);
-
-            if (!hasCar && !hasMechanic && !mechanicTooClose)
+            car.spawnPointIndex = chosen;
+            Car.CarType type = (Car.CarType)Random.Range(0, System.Enum.GetValues(typeof(Car.CarType)).Length);
+            Car.DamageType damage = (Car.DamageType)Random.Range(0, System.Enum.GetValues(typeof(Car.DamageType)).Length);
+            car.Init(type, damage);
+            if (problemIndicatorPrefab != null)
             {
-                GameObject prefab = GetRandomCarPrefab();
-                if (prefab == null) return;
-                GameObject carObj = Instantiate(prefab, spawnPoint.position, Quaternion.identity);
-                // Притискаємо машину до землі через Raycast
-                RaycastHit hit;
-                if (Physics.Raycast(carObj.transform.position + Vector3.up * 2f, Vector3.down, out hit, 10f))
-                    carObj.transform.position = hit.point;
-
-                Car car = carObj.GetComponent<Car>();
-                if (car != null)
+                var indicator = Instantiate(problemIndicatorPrefab, carObj.transform);
+                float yOffset = 2f;
+                switch (type)
                 {
-                    Car.CarType type = (Car.CarType)Random.Range(0, System.Enum.GetValues(typeof(Car.CarType)).Length);
-                    Car.DamageType damage = (Car.DamageType)Random.Range(0, System.Enum.GetValues(typeof(Car.DamageType)).Length);
-                    car.Init(type, damage);
+                    case Car.CarType.Sedan: yOffset = 2f; break;
+                    case Car.CarType.Truck: yOffset = 3.5f; break;
+                    case Car.CarType.Minivan: yOffset = 2.5f; break;
+                    case Car.CarType.Bus: yOffset = 4.5f; break;
                 }
-                return; // Спавнимо тільки одну машину за раз
+                indicator.transform.localPosition = new Vector3(0, yOffset, 0);
+                var pi = indicator.GetComponent<ProblemIndicator>();
+                if (pi != null)
+                    pi.SetProblem(damage);
             }
         }
-        // Якщо всі точки зайняті — не спавнити машину
+        spawnOccupied[chosen] = true;
     }
-} 
+}
