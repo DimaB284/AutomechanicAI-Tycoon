@@ -99,14 +99,11 @@ public class CarSpawner : MonoBehaviour
             if (problemIndicatorPrefab != null)
             {
                 var indicator = Instantiate(problemIndicatorPrefab, carObj.transform);
+                // Динамічно визначаємо верхню точку машини
+                Renderer rend = carObj.GetComponentInChildren<Renderer>();
                 float yOffset = 2f;
-                switch (type)
-                {
-                    case Car.CarType.Sedan: yOffset = 2f; break;
-                    case Car.CarType.Truck: yOffset = 3.5f; break;
-                    case Car.CarType.Minivan: yOffset = 2.5f; break;
-                    case Car.CarType.Bus: yOffset = 4.5f; break;
-                }
+                if (rend != null)
+                    yOffset = rend.bounds.max.y - carObj.transform.position.y + 0.5f;
                 indicator.transform.localPosition = new Vector3(0, yOffset, 0);
                 var pi = indicator.GetComponent<ProblemIndicator>();
                 if (pi != null)
