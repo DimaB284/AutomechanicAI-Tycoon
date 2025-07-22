@@ -18,12 +18,18 @@ public class Car : MonoBehaviour
         isRepaired = false;
     }
 
+    public void StartRepair()
+    {
+        // Тут можна додати анімацію або ефекти ремонту
+    }
+
     public void CompleteRepair()
     {
         isRepaired = true;
         isPendingDestroy = true;
         Destroy(gameObject, 1.5f);
     }
+
 
     private void OnDestroy()
     {
