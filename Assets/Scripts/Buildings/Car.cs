@@ -20,7 +20,7 @@ public class Car : MonoBehaviour
 
     public void StartRepair()
     {
-        // Тут можна додати анімацію або ефекти ремонту
+        // Here will be repair effects
     }
 
     public void CompleteRepair()
