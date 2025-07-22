@@ -263,9 +263,9 @@ public class MechanicAI : MonoBehaviour
         switch (type)
         {
             case Car.CarType.Sedan: return 1.0f;
-            case Car.CarType.Truck: return 3.0f;
+            case Car.CarType.Truck: return 1.0f;
             case Car.CarType.Minivan: return 1.5f;
-            case Car.CarType.Bus: return 3.0f;
+            case Car.CarType.Bus: return 1.0f;
             default: return 1.0f;
         }
     }
